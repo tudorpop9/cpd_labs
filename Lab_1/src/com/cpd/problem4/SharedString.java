@@ -1,5 +1,7 @@
 package com.cpd.problem4;
 
+import static java.lang.Thread.sleep;
+
 public class SharedString {
 
     private String string;
@@ -18,15 +20,19 @@ public class SharedString {
         this.isBusy = ! this.isBusy;
     }
 
-    private synchronized void readFront() throws InterruptedException {
+    public synchronized char readFront() throws InterruptedException {
         if(isBusy){
             wait();
         }
         // block the other thread
         this.toggleBusy();
 
+        char returnChar = '\0';
         if(string.length() > 0){
-            System.out.println(string.charAt(this.lo));
+            //simulate some kind of delay
+            sleep(1000);
+
+            returnChar = string.charAt(this.lo);
             // on overflow, reset
             if(++lo >= string.length()){
                 lo = 0;
@@ -34,17 +40,21 @@ public class SharedString {
         }
         // release
         this.toggleBusy();
+        return returnChar;
     }
 
-    private synchronized void readBack() throws InterruptedException {
+    public synchronized char readBack() throws InterruptedException {
         if(isBusy){
             wait();
         }
         // block the other thread
         this.toggleBusy();
-
+        char returnChar = '\0';
         if(string.length() > 0){
-            System.out.println(string.charAt(this.lo));
+            //simulate some kind of delay
+            sleep(1000);
+
+            returnChar = string.charAt(this.hi);
             // update index, and on underflow, reset
             if(--hi < 0){
                 hi = string.length() - 1;
@@ -52,6 +62,13 @@ public class SharedString {
         }
         // release
         this.toggleBusy();
+
+        return returnChar;
     }
+
+    public int length(){
+        return this.string.length();
+    }
+
 
 }
