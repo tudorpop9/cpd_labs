@@ -20,12 +20,7 @@ public class SharedString {
         this.isBusy = ! this.isBusy;
     }
 
-    public synchronized char readFront() throws InterruptedException {
-        if(isBusy){
-            wait();
-        }
-        // block the other thread
-        this.toggleBusy();
+    private synchronized char readFront() throws InterruptedException {
 
         char returnChar = '\0';
         if(string.length() > 0){
@@ -38,30 +33,45 @@ public class SharedString {
                 lo = 0;
             }
         }
-        // release
-        this.toggleBusy();
+
         return returnChar;
     }
 
-    public synchronized char readBack() throws InterruptedException {
+    private synchronized char readBack() throws InterruptedException {
+
+        char returnChar = '\0';
+        if(string.length() > 0){
+            //simulate a different kind of delay
+            sleep(2500);
+
+            returnChar = string.charAt(this.hi);
+            // update index, and on underflow reset
+            if(--hi < 0){
+                hi = string.length() - 1;
+            }
+        }
+
+        return returnChar;
+    }
+
+    public synchronized char readConcurrently(boolean frontRead) throws InterruptedException {
         if(isBusy){
             wait();
         }
         // block the other thread
         this.toggleBusy();
-        char returnChar = '\0';
-        if(string.length() > 0){
-            //simulate some kind of delay
-            sleep(1000);
 
-            returnChar = string.charAt(this.hi);
-            // update index, and on underflow, reset
-            if(--hi < 0){
-                hi = string.length() - 1;
-            }
+        char returnChar = '\0';
+        // decide direction
+        if(frontRead){
+            returnChar = this.readFront();
+        }else{
+            returnChar = this.readBack();
         }
+
         // release
         this.toggleBusy();
+        notify();
 
         return returnChar;
     }

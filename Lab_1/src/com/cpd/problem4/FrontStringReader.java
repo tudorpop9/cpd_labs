@@ -13,7 +13,7 @@ public class FrontStringReader extends Thread{
         super.run();
         try {
             for(int i=0;i<string.length();i++){
-                System.out.println("Front reader thread: " + this.string.readFront());
+                System.out.println("Front reader thread: " + this.string.readConcurrently(true));
             }
         } catch (InterruptedException e) {
             e.printStackTrace();

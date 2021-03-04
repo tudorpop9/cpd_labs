@@ -12,7 +12,7 @@ public class BackStringReader extends Thread{
         super.run();
         try {
             for(int i=0;i<string.length();i++){
-                System.out.println("Back reader thread: " + this.string.readBack());
+                System.out.println("Back reader thread: " + this.string.readConcurrently(false));
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
