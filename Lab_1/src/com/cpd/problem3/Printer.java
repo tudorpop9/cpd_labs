@@ -19,14 +19,14 @@ public class Printer {
     public synchronized void printDocument(String employeeName, Document document) throws InterruptedException {
         if(isPrinterBusy){
             wait();
-        }else{
-            toggleBusy();
-            System.out.println("Printer: " + employeeName + " has printed document_" + document.getDocIndex());
-            // keeps the printer busy for 1-3 seconds
-            sleep(1000 + (long)random.nextInt(2000));
-            toggleBusy();
-            notify();
         }
+        // here used to be an else attached to the if, I think that implementation is bad
+        toggleBusy();
+        System.out.println("Printer: " + employeeName + " has printed document_" + document.getDocIndex());
+        // keeps the printer busy for 1-3 seconds
+        sleep(1000 + (long)random.nextInt(2000));
+        toggleBusy();
+        notify();
     }
 
 }
