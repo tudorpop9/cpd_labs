@@ -14,7 +14,11 @@ public class Server {
 
         for(;;){
             Socket receiver = serverSocket.accept();
-
+            // handle client
         }
+    }
+
+    private void stop() throws IOException {
+        serverSocket.close();
     }
 }
