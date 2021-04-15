@@ -34,6 +34,7 @@ public class ServerRequestHandler extends Thread{
 
                 try{
                     this.performRequest(request);
+                    sender.println("Request performed");
                 }catch (ArrayIndexOutOfBoundsException arrayIndexOutOfBoundsException){
                     sender.println("Not enough parameters, or wrong format");
                 }catch (NumberFormatException numberFormatException){
