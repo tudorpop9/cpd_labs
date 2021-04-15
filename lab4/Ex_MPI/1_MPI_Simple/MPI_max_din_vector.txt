@@ -1,0 +1,106 @@
+/* find the greatest element in an array of integers
+   root broadcasts the length of the array to all processes
+   MPI_Scatter splits the array into size(#of processes) pieces
+   the remainder is handled by the root
+   each process finds local_max 
+   MPI_Reduce gets global_max on the root process  */
+
+
+int find_max(int*,int,int*);
+int sort(int*,int);
+
+void main(int argc, char *argv[])
+{
+  struct tms time;
+  int *array,*sub_array;
+  int length,sub_length,rem_length;
+  int local_max,global_max,i,j;
+  int mype,size,root;
+  long seed;
+
+  root =0;
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&mype);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  
+  if(mype == root)      /* root process initializes
+                              array with random numbers*/
+    {
+      seed = abs(times(&time));
+      srand48(seed);
+      length = 5;
+      array = (int *) malloc(sizeof(int)*length);
+      for(i=0;i<length;i++)
+       array[i] = lrand48()/mod;
+    }
+
+
+  MPI_Bcast(&length,1,MPI_INT,root,MPI_COMM_WORLD);
+/* root process broadcast array length to all processes */
+ 
+  if(length < mype)
+   {
+     tprintf("too many nodes");
+     exit(1);
+   } 
+  /*array is split in sub_arrays sub_length long, remainder appended to root*/
+  sub_length = length/size;
+  rem_length = length%size;
+  
+  if(mype == root)
+    sub_array  = (int *) malloc(sizeof(int)*(sub_length+rem_length));
+  else
+    sub_array  = (int *) malloc(sizeof(int)*sub_length);
+
+   MPI_Scatter(array,
+	       sub_length,
+	       MPI_INT,
+               sub_array,
+	       sub_length,
+	       MPI_INT,
+	       root,
+               MPI_COMM_WORLD);
+/* scatters array into subarrays of size sub_length) */
+
+/* append the remainder to the root's sub_array */
+   if(mype == root)    
+     {
+       array += (length - rem_length); /*advance pointer to the remainder*/
+       sub_array += sub_length;        /* and to the space for the remainder*/
+       for(i=0;i<rem_length;i++)
+         *sub_array++ = *array++;
+       array -= length;
+       sub_length += rem_length;       /*redefine sub_length for root*/
+       sub_array -= sub_length;
+     }
+   find_max(sub_array,sub_length,&local_max);
+/* every process finds maximum in its sub_array */
+   tprintf("%d  %d\n",mype,local_max);
+
+   MPI_Reduce(&local_max,
+	      &global_max,
+	      1,
+	      MPI_INT,
+	      MPI_MAX,
+	      root,
+	      MPI_COMM_WORLD);
+
+   if(mype == root)
+     { 
+       tprintf("%d  %d \n",mype,global_max);
+       find_max(array,length,&local_max);
+       tprintf("%d  %d \n",mype,local_max);
+     }
+}
+
+int find_max(int *array,int length,int *max)
+{
+  int i;
+
+  *max = *array++;
+  for(i=1;i<length;i++,array++)
+   if(*max < *array)
+      *max = *array;
+  return 0;
+}
+

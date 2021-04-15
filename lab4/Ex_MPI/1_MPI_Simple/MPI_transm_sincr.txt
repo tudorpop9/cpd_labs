@@ -1,0 +1,47 @@
+/* This program makes 2 processes send their Id's to each oher using synchronous 
+transmition !!! */
+
+#include <stdio.h>
+#include "mpi.h"
+
+int main(int argc, char* argv[]) {
+	int x, y, np, me;
+	int tag=42;
+	MPI_Status status;
+
+	MPI_Init(&argc, &argv);               /* Initialize MPI */
+	MPI_Comm_size(MPI_COMM_WORLD, &np);   /* Get number of processes */
+	MPI_Comm_rank(MPI_COMM_WORLD, &me);   /* Get own identifier */
+
+	/* Check whether there are 2 processes in system */
+	if (np != 2) {
+		if (me==0) printf("Only two processes needed \n");
+		MPI_Finalize();
+		exit(0);
+	}
+	x=me;
+	if (me==0) {	/* Process 0 */
+		printf("Process 0 sending %d to process 1\n", x);
+		MPI_Ssend(&x, 1, MPI_INT, 1, tag, MPI_COMM_WORLD);	/* Synchronous send */
+		printf("Process 0 sent\n");
+		printf("Process 0 receiving from process 1\n");
+		MPI_Recv (&y, 1, MPI_INT, 1, tag, MPI_COMM_WORLD, &status);
+		printf("Process 0 received %d from process 1\n",y);
+		printf("Process 0 ready\n");
+  	} 
+	else {		/* Process 1 */
+		/* because synchronous transmition is used first by process 0 then process 1
+		should call Recv first in order to avoid mutual blocking */		
+		printf("Process 1 receiving from process 0\n");
+		MPI_Recv(&y, 1, MPI_INT, 0, tag, MPI_COMM_WORLD, &status);
+		printf("Process 1 received %d from process 0\n", y);
+		printf("Process 1 sending %d to process 0\n", x);
+		MPI_Ssend(&x, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);	/* Synchronous send */
+		printf("Process 1 sent\n");
+	}
+
+	MPI_Finalize();	/* Close MPI_WORLD */
+
+	/* Success */
+	return(0);
+}

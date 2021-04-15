@@ -1,0 +1,67 @@
+/* This program makes a ring of processors which sends each others their id's and 
+calculate the sum !!! */
+
+#include "mpi.h"
+#include <stdio.h>
+
+/* Set comunication tags */
+#define TO_RIGHT_TAG 201
+#define TO_LEFT_TAG 102
+
+int main (int argc, char *argv[])
+{
+	int value, new_value, procnum, numprocs;
+	int right, left;
+	int sum, i;
+	MPI_Status recv_status;
+
+	/* Initialize MPI */
+	MPI_Init(&argc, &argv);
+	
+	/* Detect current process no. */
+	MPI_Comm_rank(MPI_COMM_WORLD, &procnum);
+	
+	/* Detect total no. of processes */
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	
+	/* Calculate no. of process from right  */
+	right=procnum+1;
+	if (right==numprocs) right=0;
+	
+	/* Calculate no. of process from left  */
+	left=procnum-1;
+	if (left==-1) left=numprocs-1;
+
+	sum=0;
+	value=procnum;
+	for(i=0;i<numprocs;i++) {
+		
+		/* Send to right */
+		MPI_Send(&value, 1, MPI_INT, right, TO_RIGHT_TAG,
+		MPI_COMM_WORLD);
+		
+		/* Get from left */
+		MPI_Recv(&new_value, 1, MPI_INT, left, TO_RIGHT_TAG,
+		MPI_COMM_WORLD, &recv_status);
+		
+		/* Sum new value to partial sum */
+		sum=sum+new_value;
+		
+		/* Renew transfer value */
+		value=new_value;
+		
+		/* Print partial sum */
+		printf("On processor %d:\t Partial sum = %d\n", procnum, sum);
+	}
+
+	/* Print final result on process 0 */
+	if (procnum==0) {
+		printf("Sum of all processor numbers = %d\n", sum);
+	}
+	
+	/* Shut down MPI */
+	MPI_Finalize();
+
+	/* Return success */
+	return(0);
+}

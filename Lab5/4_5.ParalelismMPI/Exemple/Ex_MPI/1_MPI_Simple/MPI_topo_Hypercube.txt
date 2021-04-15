@@ -1,0 +1,114 @@
+#include "mpi.h" 
+#include <stdio.h> 
+
+// returnarea lui n astfel incat 2^n sa fie egal cu numarul de procese
+int getPower(int processNumber)
+	{
+	int power = 0;
+	int partialResult = 1;
+
+	for (int i = 0; i < processNumber; i++)
+		{
+		if (partialResult == processNumber)
+			break;
+
+		power += 1;
+		partialResult *= 2;
+		}
+
+	return power;
+	}
+
+
+// calculul lui 2^n
+int power2(int exponent)
+	{
+	int power = 1;
+
+	for (int i = 0; i < exponent; i++)
+		{
+		power *= 2;
+		}
+
+	return power;
+	}
+		
+// verificarea faptului ca procesul curent trebuie sa primeasca
+bool mustReceive(int currentRank, int currentPower)
+	{	
+	if (currentRank == 0)
+		return true;
+
+	for (int i = 0; i < currentPower; i++)
+		if (i + currentPower == currentRank)
+			return true;
+
+	return false;
+	}
+
+// functia main
+int main(int argc, char *argv[]) 	 	
+	{ 
+	int processNumber;
+	int currentRank;
+	int currentPower;
+
+	int source; 
+	int destination;
+	
+	int errorCode;
+	int tag=1; 
+	char inmsg, outmsg='x'; 
+	MPI_Status Stat; 
+	
+	// initializare
+	MPI_Init(&argc, &argv); 
+	
+	// obtinerea numarului de procese
+	MPI_Comm_size(MPI_COMM_WORLD, &processNumber); 
+
+	// obtinerea puterii lui doi 
+	int power = getPower(processNumber);	
+	
+	// obtinerea rangului procesului curent
+	MPI_Comm_rank(MPI_COMM_WORLD, &currentRank); 
+	
+	// se itereaza de un numar de pasi egal cu puterea lui doi
+	for (int i = 0; i < power; i++)
+		{
+		int currentPower = power2(i);
+
+		// daca rangul procesului curent este mai mic sau egal cu 2 la puterea data de
+		// pasul curent, procesul curent va transmite un mesaj unei destinatii calculate
+		// conform fomulei: destination = source + 2^step		
+		if (currentRank < currentPower)
+			{
+			destination = currentRank + currentPower;			
+
+			if (destination >= processNumber)
+				{
+				printf("%d\n", destination);
+				break;
+				}			
+			errorCode = MPI_Send(&outmsg, 1, MPI_CHAR, destination, tag, MPI_COMM_WORLD); 						
+			printf("Step %d: Process %d sent a character to process %d\n", 
+					i + 1, currentRank, destination);  						
+			}
+		// daca rangul procesului curent este mai mare cu valoarea 2 la puterea data de 
+		// pasul curent decat unul din procesele cu rang mai mic decat al sau, atunci va
+		// trebui sa primeasca un mesaj de la acesta: source = destination - 2^step
+		else			
+			if (mustReceive(currentRank, currentPower))
+				{								
+				source = currentRank - currentPower;				
+				errorCode = MPI_Recv(&inmsg, 1, MPI_CHAR, source, tag, 	MPI_COMM_WORLD, &Stat);				
+				printf("Step %d: Process %d received a character from process %d\n", 
+						i + 1, currentRank, source);  											
+				}
+			else
+				// procesul curent nu face nimic la pasul curent				
+				printf("Step %d:\n", i + 1);
+		}	
+
+	MPI_Finalize();
+	} 

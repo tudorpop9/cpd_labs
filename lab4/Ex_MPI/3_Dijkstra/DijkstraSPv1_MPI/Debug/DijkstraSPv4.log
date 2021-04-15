@@ -1,0 +1,16 @@
+﻿Build started 20.02.2017 13:40:43.
+     1>Project "G:\PDC\PDC project\DijkstraSPv4\DijkstraSPv4.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Program Files (x86)\Microsoft SDKs\MPI\Include\\" /I"C:\Program Files (x86)\Microsoft SDKs\MPI\Include\\x86" /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\DijkstraSPv4.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt DijkstraSPv4.cpp
+         DijkstraSPv4.cpp
+     1>g:\pdc\pdc project\dijkstraspv4\dijkstraspv4.cpp(53): warning C4101: 'tmp' : unreferenced local variable
+     1>g:\pdc\pdc project\dijkstraspv4\dijkstraspv4.cpp(179): warning C4101: 'i' : unreferenced local variable
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"G:\PDC\PDC project\Debug\DijkstraSPv4.exe" /INCREMENTAL /NOLOGO /LIBPATH:"C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x86\\" msmpi.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"G:\PDC\PDC project\Debug\DijkstraSPv4.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"G:\PDC\PDC project\Debug\DijkstraSPv4.lib" /MACHINE:X86 Debug\DijkstraSPv4.obj
+         Debug\stdafx.obj
+         DijkstraSPv4.vcxproj -> G:\PDC\PDC project\Debug\DijkstraSPv4.exe
+     1>Done Building Project "G:\PDC\PDC project\DijkstraSPv4\DijkstraSPv4.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.05

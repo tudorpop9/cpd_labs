@@ -1,0 +1,127 @@
+/*
+ * Program which creates a carthesian topology and makes each
+ * processor send its coordinates to its neighbours.
+ *
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "mpi.h"
+
+int main(int argc, char* argv[])
+{
+	int rank, size, rc, tag = 100;
+	int rnk, buff[4], nr;
+	int dims[2] = {4, 4};
+	int periods[2] = {1, 1};
+	int coords[2];
+	MPI_Comm comm;
+	MPI_Status status;
+
+	/* initialize process in MPI */
+	rc = MPI_Init(&argc, &argv);
+
+	/* see if init was successful */
+	if (rc != MPI_SUCCESS)
+	{
+		printf("Error initializing MPI!\nAborting...\n");
+		MPI_Abort(MPI_COMM_WORLD, rc);
+		exit(0);
+	}
+
+	/* get process' rank in own group */
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	/* get # of process in group */
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &comm);
+	MPI_Cart_coords(comm, rank, 2, &coords[0]);
+
+	/* send rank to neighbours */
+	if (coords[0] > 0)
+	{
+		coords[0]--;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[0]++;
+		MPI_Send(&rank, 1, MPI_INT, rnk, tag, MPI_COMM_WORLD);
+	}
+	if (coords[0] < 3)
+	{
+		coords[0]++;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[0]--;
+		MPI_Send(&rank, 1, MPI_INT, rnk, tag, MPI_COMM_WORLD);
+	}
+	if (coords[1] > 0)
+	{
+		coords[1]--;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[1]++;
+		MPI_Send(&rank, 1, MPI_INT, rnk, tag, MPI_COMM_WORLD);
+	}
+	if (coords[1] < 3)
+	{
+		coords[1]++;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[1]--;
+		MPI_Send(&rank, 1, MPI_INT, rnk, tag, MPI_COMM_WORLD);
+	}
+
+	/* receive rank from neighbours */
+	nr = 0;
+	if (coords[0] > 0)
+	{
+		coords[0]--;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[0]++;
+		MPI_Recv(&buff[nr++], 1, MPI_INT, rnk, tag, MPI_COMM_WORLD, &status);
+	}
+	if (coords[0] < 3)
+	{
+		coords[0]++;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[0]--;
+		MPI_Recv(&buff[nr++], 1, MPI_INT, rnk, tag, MPI_COMM_WORLD, &status);
+	}
+	if (coords[1] > 0)
+	{
+		coords[1]--;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[1]++;
+		MPI_Recv(&buff[nr++], 1, MPI_INT, rnk, tag, MPI_COMM_WORLD, &status);
+	}
+	if (coords[1] < 3)
+	{
+		coords[1]++;
+		MPI_Cart_rank(comm, coords, &rnk);
+		coords[1]--;
+		MPI_Recv(&buff[nr++], 1, MPI_INT, rnk, tag, MPI_COMM_WORLD, &status);
+	}
+
+	switch (nr)
+	{
+		case 2:
+		{
+			printf("Process %d has neighbours: %d %d.\n", rank,
+				buff[0], buff[1]);
+			break;
+		}
+		case 3:
+		{
+			printf("Process %d has neighbours: %d %d %d.\n", rank,
+				buff[0], buff[1], buff[2]);
+			break;
+		}
+		case 4:
+		{
+			printf("Process %d has neighbours: %d %d %d %d.\n", rank,
+				buff[0], buff[1], buff[2], buff[3]);
+			break;
+		}
+	}
+
+	/* finalize process in MPI */
+	MPI_Finalize();
+
+	return 0;
+}

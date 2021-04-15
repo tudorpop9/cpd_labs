@@ -1,0 +1,214 @@
+//
+S-a implementat un algoritm paralel de inmultire a doua matrici patrate, algoritm care presupune urmatorii pasi:
+
+- se dau doua matrici A si B, fiecare de dimensiune N x N;
+- se dau M x M procese, care vor trebui sa calculeze produsul A x B = C;
+- N este multiplu de M;
+
+- se creeaza cele M x M procese, fiecare cu un identificator: 0, 1, ..., M x M - 1;
+- procesul 0 face broadcast celorlalte procese, transmitand matricile A si B in intregime;
+- fiecare proces, pe baza identificatorului sau, extrage din matricea A o linie de blocuri, iar din matricea B o coloana de blocuri;
+- blocurile au dimensiunea (N / M) x (N / M);
+- blocurile se inmultesc si apoi se aduna intre ele, rezultand un bloc final, care va fi incadrat in matricea rezultat;
+- blocurile, calculate de catre fiecare proces, sunt adunate de procesul 0 printr-o operatie de tip "gather";
+- deoarece matricea astfel receptionata nu coincide cu cea rezultat (deoarece blocurile sufera, prin aceasta, o operatie de "serializare");
+matricea rezultat este rearanjata, astfel incat aceasta sa fie echivalenta cu o operatie de "gather" ne-serializata;
+- procesul 0 va afisa apoi acest rezultat final;
+
+- NOTA: numarul de procese trebuie setat in prealabil la M x M, altfel se va semnala eroare.
+
+
+
+
+// implementarea inmultirii pe blocuri a matricilor
+
+#include "mpi.h" 
+#include <stdio.h> 
+#include <conio.h>
+#include <stdlib.h>
+
+#define N 6
+#define M 2
+
+// latimea maxima a unei matrici
+#define DIM 10
+
+
+// matricile sursa initiale
+
+int aSource[DIM * DIM] = 
+{	1, 2, 3, 4, 5, 6,
+	2, 3, 4, 5, 6, 7, 
+	3, 4, 5, 6, 7, 8,
+	4, 5, 6, 7, 8, 9,
+	5, 6, 7, 8, 9, 10,
+	6, 7, 8, 9, 10, 11 
+};
+
+int bSource[DIM * DIM] = 
+{	6, 7, 8, 9, 10, 11,
+	5, 6, 7, 8, 9, 10,
+	4, 5, 6, 7, 8, 9,
+	3, 4, 5, 6, 7, 8,
+	2, 3, 4, 5, 6, 7, 
+	1, 2, 3, 4, 5, 6
+};
+
+// inmultirea blocurilor a[] si b[], de latura lat, rezultand blocul c[]
+void inmBloc(int lat, int a[], int b[], int c[])
+{
+	int i, j, k;
+
+	for (i = 0; i < lat; i++)
+		for (j = 0; j < lat; j++)
+		{
+			c[i * lat + j] = 0;
+			for (k = 0; k < lat; k++)
+				c[i * lat + j] += a[i * lat + k] * b[k * lat + j];
+		}
+}
+
+// adunarea blocurilor a[] si b[], de latura lat, rezultand blocul c[]
+void adunaBloc(int lat, int a[], int b[], int c[])
+{
+	int i, j;
+
+	for (i = 0; i < lat; i++)
+		for (j = 0; j < lat; j++)
+			c[i * lat + j] = a[i * lat + j] + b[i * lat + j];
+}
+
+// afisarea unei matrici a[], de latura lat, avand numele nume
+void printMatrix(int lat, int a[DIM * DIM], char nume[])
+{
+	int i, j;
+
+	printf("%s:\n", nume);
+	for (i = 0; i < lat; i++)
+	{
+		for (j = 0; j < lat; j++)
+			printf("%3d ", a[i * lat + j]);
+		printf("\n");
+	}
+}
+
+int main(int argc, char *argv[])
+{ 
+	int rank, numtasks; 
+	
+	int a[DIM * DIM];
+	int b[DIM * DIM];
+	int cf[DIM * DIM];
+	int ci[DIM * DIM];
+	int i, j;
+
+	MPI_Status Stat; 
+	MPI_Init(&argc, &argv); 
+	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	if (numtasks != M * M)
+	{
+		printf("Setati %d procese !\n", M * M);
+		exit(0);
+	}
+	
+	// procesul master initializeaza matricile cu matricile sursa
+	if (rank == 0)
+	{ 
+		printf("Initializare matrici...\n");
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+			{
+				a[i * N + j] = aSource[i * N + j];
+				b[i * N + j] = bSource[i * N + j];
+			}
+	} 
+
+	// se transmit prin broadcast matricile a[] si b[] la ceilalti workeri
+	MPI_Bcast(a, N * N, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(b, N * N, MPI_INT, 0, MPI_COMM_WORLD);
+	
+	// workerii afiseaza ce au primit
+	printf("[%d]: s-a primit matricea A:\n", rank);
+	printMatrix(N, a, "A");
+
+	printf("[%d]: s-a primit matricea B:\n", rank);
+	printMatrix(N, b, "B");
+
+	// workerul va extrage o anumita linie si coloana de blocuri, in functie de indicele sau
+
+	printf("[%d] extrage linia %d si coloana %d\n", rank, rank / M, rank % M);
+
+	int R = N / M;
+
+	int s[DIM * DIM], r[DIM * DIM];
+	int p[DIM * DIM], q[DIM * DIM];
+
+	// se initializeaza matricea suma initiala
+	for (i = 0; i < R; i++)
+		for (j = 0; j < R; j++)
+			s[i * R + j] = 0;
+
+	
+	int linie = rank / M;
+	int coloana = rank % M;
+	int index = 0, l, c;
+
+	// se obine blocul final, prin adunarea produselor partiale de blocuri
+	for (index = 0; index < M; index++)
+	{
+		for (l = linie * R; l < (linie + 1) * R; l++)
+			for (c = index * R; c < (index + 1) * R; c++)
+				p[(l - (linie * R)) * (R) + c - (index * R)] = a[l * N + c];
+		
+		for (l = index * R; l < (index + 1) * R; l++)
+			for (c = coloana * R; c < (coloana + 1) * R; c++)
+				q[(l - (index * R)) * (R) + c - (coloana * R)] = b[l * N + c];
+
+		printf("La pasul %d, blocurile sunt:\n", index);
+
+		printMatrix(R, p, "P");
+		printMatrix(R, q, "Q");
+
+		inmBloc(R, p, q, r);
+		adunaBloc(R, s, r, s);
+	}
+
+	printf("Blocul final calculat de procesul [%d]:\n", rank);
+	printMatrix(R, s, "S");
+
+	// se asteapta ca toate procesele sa ajunga in acest punct
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	// se aduna informatiile de la ceilalti workeri
+	MPI_Gather(s, R * R, MPI_INT, ci, 
+		R * R, MPI_INT, 0, MPI_COMM_WORLD);
+
+	// master-ul afiseaza rezultatul final
+	if (rank == 0)
+	{
+		printMatrix(N, ci, "Rezultatul final initial");
+		
+		for (i = 0; i < N; i++)
+			for (j = 0; j < N; j++)
+			{
+				int index = i * N + j;
+				int bloc = index / (R * R);
+				int linieBloc = bloc / M;
+				int linieFinala = linieBloc * R + (index % (R * R)) / R;
+			
+				int coloanaBloc = bloc % M;
+				int coloanaFinala = coloanaBloc * R + (index % (R * R)) % R;
+		
+				cf[linieFinala * N + coloanaFinala] = ci[index];
+			}
+
+		printMatrix(N, cf, "Rezultatul final final");
+		inmBloc(N, a, b, cf);
+		printMatrix(N, cf, "Rezultatul final obtinut prin inmultire directa:");
+	}
+	
+	MPI_Finalize();
+} 

@@ -1,0 +1,15 @@
+Pentru testare numarul de procese trebuie sa fie patrat perfect, iar dimensiunile matriciilor patratice trebuie sa fie divizibil cu radicalul numarului de procese.
+S-a folosit o matrice de dimensiunile 1000x1000 pentru numere de procese pare si divizibile cu 5
+                                      1002x1002 pentru un numar de procese divizibil cu 3
+
+Pentru algoritmul Fox cel mai bun timp s-a obtinut pentru varianta seriala, 
+        timpul de rulare crescand considerabil impreuna cu numarul de procese. Implementarea s-a realizat dupa modelul din resursele din laborator. 
+
+Pentru algoritmul Cannon s-a putut rula doar varianta seriala, cu un timp de rulare de peste 10 ori mai mare decat timpul de rulare al algoritmul Fox cu 1 proces.
+        Daca numarul de procese este mai mare de 1, un bug produce exceptia 'segmentation fault'.
+
+Rezultate obtinute se pot observa in excel-ul atasat
+
+OS: Ubuntu 20.04
+Compilare: mpicc ./foxAlgo.c  -lm -o fox
+Rulare   : time mpirun --hostfile ./hostfile.txt -np 100 ./fox 1000
