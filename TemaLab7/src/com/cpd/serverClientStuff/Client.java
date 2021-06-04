@@ -20,7 +20,10 @@ public class Client {
 
     public String sendRequest(String requestBody) throws IOException {
         sender.println(requestBody);
-        return receiver.readLine();
+
+        String return_msg = receiver.readLine();
+        System.out.printf(return_msg);
+        return return_msg;
     }
 
     public void disconnect() throws IOException {

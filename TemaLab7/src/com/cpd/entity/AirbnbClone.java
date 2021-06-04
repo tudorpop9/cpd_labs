@@ -46,8 +46,11 @@ public class AirbnbClone {
         this.users = users;
     }
 
-    public synchronized void addUser(String name, String role){
-        this.users.add(new User(name, UserType.valueOf(role)));
+    public synchronized User addUser(String name, String role){
+        User newUser = new User(name, UserType.valueOf(role));
+        this.users.add(newUser);
+
+        return newUser;
     }
 
     public synchronized void addPlace(String city, String placeName, long ownerId){

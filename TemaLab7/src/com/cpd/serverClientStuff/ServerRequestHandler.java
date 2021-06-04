@@ -1,6 +1,7 @@
 package com.cpd.serverClientStuff;
 
 import com.cpd.entity.AirbnbClone;
+import com.cpd.entity.User;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class ServerRequestHandler extends Thread{
                 }catch (NumberFormatException numberFormatException){
                     sender.println("invalid number format, or parameter order");
                 }catch (Exception e){
-                    sender.println("Unsupported operation / Unknown exception ");
+                    sender.println("Unsupported operation / Unknown exception");
                 }
 
             }
@@ -53,7 +54,17 @@ public class ServerRequestHandler extends Thread{
         }
     }
 
-    private void performRequest(String request) throws Exception {
+
+    /**
+     *
+     * @param request de forma: "nume_metoda param1 param2 param3"
+     *                pentru requestul cu o luna se foloseste formatul: JAN, FEB, MAR, APR, etc.
+     *                                                                  [upper case + forma prescurtata]
+     *                pentru user role se foloseste formatul: TOURIST, OWNER [upper case]
+     *                prentu city se scrie orice strig, oras, țară, continent, it does not matter
+     * @throws Exception
+     */
+    private synchronized void performRequest(String request) throws Exception {
         String[] splitReq = request.split(" ", 2);
         String reqName = splitReq[0];
 
@@ -63,7 +74,9 @@ public class ServerRequestHandler extends Thread{
                 String userName = addUserParams[0];
                 String userRole = addUserParams[1];
 
-                this.airbnbClone.addUser(userName, userRole);
+                User user =  this.airbnbClone.addUser(userName, userRole);
+                System.out.printf("Added user:\n" + user.toString());
+
                 break;
             case "addPlace":
                 String[] requestParams = splitReq[1].split(" ");
